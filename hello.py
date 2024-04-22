@@ -86,6 +86,3 @@ job_result = job.result()
 # This is the result from our single pub, which had five observables,
 # so contains information on all five.
 pub_result = job.result()[0]
-
-# print the job id
-print("JOB ID:", job.id)

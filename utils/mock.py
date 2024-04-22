@@ -10,7 +10,7 @@ def mock(qc):
 
     return result_ideal, counts_ideal
 
-def save_mock_counts(counts_ideal, path="result/counts_histogram.png"):
+def save_mock_counts(counts_ideal, path="results/counts_histogram.png"):
     # Plot a histogram of the counts
     figure = plot_histogram(counts_ideal)
 
