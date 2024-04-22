@@ -1,0 +1,4 @@
+.env
+simons-env/
+*/__pycache__
+__pycache__/
