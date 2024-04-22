@@ -11,9 +11,18 @@ def int_to_bits(x, num_bits):
     return bits
 
 def is_linearly_independent(vectors):
-    matrix = np.array(vectors)
-    rank = np.linalg.matrix_rank(matrix, tol=None)
-    return rank == matrix.shape[1]
+    if len(vectors) <= 1:
+        return True
+    
+    # Formulate the linear combination equation using the scalars a1,a2,…,ana1
+    # a1v1+a2v2+…+anvn=0
+    # where v1,v2,…,vn are the vectors
+    # The vectors are linearly independent if the only solution to the equation is a1=a2=…=an=0
+    for i in range(len(vectors)):
+        for j in range(len(vectors)):
+            if sdotx(vectors[i], vectors[j]) % 2 != 0:
+                return False
+    return True
 
 def gaussian_elimination_bit_strings(set):
     """Perform Gaussian elimination on a matrix of bit strings."""
@@ -45,4 +54,5 @@ def sdotx(s, x):
     accum = 0
     for i in range(len(s)):
         accum += int(s[i]) * int(x[i])
+    print(accum)
     return (accum % 2)
