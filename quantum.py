@@ -2,7 +2,9 @@ from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 from qiskit_ibm_runtime import EstimatorV2 as Estimator
+from qiskit_ibm_runtime import SamplerV2 as Sampler
 from qiskit_textbook.tools import simon_oracle
+from qiskit.visualization import plot_histogram
 
 import config as cfg
 from utils.mock import mock, save_mock_counts
@@ -14,7 +16,6 @@ import utils
 
 s = cfg.SIMON_SECRET
 n = cfg.N_BITS
-
 print("Secret string s:" + s)
 print("Number of bits n:" + str(n))
 
@@ -26,21 +27,12 @@ qc = QuantumCircuit(qr1, qr2, cr)
 # applying H-gate on qubits of first register
 qc.h(qr1)
 qc.barrier()
-# manual attempt at making the oracle
-# applying bit wise X-OR from register 1 to register 2 where qubits of first register is 1
-# for index, i in enumerate(s):
-#     if i == '1':
-#         qc.cx(qr1[0], qr2[index])
 qc &= simon_oracle(s)
-qc.barrier()
-# measuring qubits of second register
-qc.measure(qr2,cr)
 qc.barrier()
 # applying H-gate to qubits of first register
 qc.h(qr1)
 qc.barrier()
 qc.measure(qr1,cr)
-# measuring qubits of fir
 figure1 = qc.draw("mpl", cregbundle=False, initial_state=True)
 
 # Save the figure to a file
@@ -59,15 +51,11 @@ if cfg.MOCK:
         if dot != 0:
             error = True
         print( '{}.{} = {} (mod 2)'.format(s, x, sdotx(s,x)) )
-    
+
     if error:
         print("Error in dot products")
         exit(1)
     exit(0)
-
-# Set up six different observables.
-observables_labels = ["Z" * n * 2, "X" * n * 2, "Y" * n * 2, "I" * n * 2]
-observables = [SparsePauliOp(label) for label in observables_labels]
 
 service = utils.get_service()
 
@@ -82,23 +70,17 @@ figure2 = isa_circuit.draw('mpl', idle_wires=False)
 figure2.savefig("circuits/simon_sample_circuit_optimized_%s.png" % s)
 print("Optimized circuit saved to 'circuits/hello_circuit_optimized_%s.png'" % s)
 
-# Construct the Estimator instance we want to use.
+# using SamplerV2 to measure the bit strings
+sampler = Sampler(backend)
+sampler.options.dynamical_decoupling.enable = True
+sampler.options.dynamical_decoupling.sequence_type = "XY4"
+sampler.options.default_shots = 100
 
-estimator = Estimator(backend)
-estimator.options.resilience_level = 1
-estimator.options.default_shots = 500
- 
-observables = [
-    observable.apply_layout(isa_circuit.layout) for observable in observables
-]
+job = sampler.run([isa_circuit])
+print("Job ID:", job.job_id())
+result = job.result(timeout=12000)
+print("Result:", result)
 
-# One pub, with one circuit to run against five different observables.
-job = estimator.run([(isa_circuit, observables)])
- 
-# This is the result of the entire submission.  We submitted one Pub,
-# so this contains one inner result (and some metadata of its own).
-job_result = job.result()
- 
-# This is the result from our single pub, which had five observables,
-# so contains information on all five.
-pub_result = job.result()[0]
+pub_result = result[0]
+counts = pub_result.data.c0.get_counts()
+print(f"Counts for the c0 output register: {counts}")
